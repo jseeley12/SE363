@@ -1,0 +1,1 @@
+MATCH (c:courses) OPTIONAL MATCH (s:students)-[r:register]->(c:courses) RETURN c.number, c.name, AVG(r.grade)

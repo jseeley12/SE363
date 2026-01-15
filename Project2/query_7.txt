@@ -1,0 +1,1 @@
+MATCH (s:students)-[r:register]->(c:courses), (s)-[m:major]->(d:degrees) WHERE (d.level = "MS" OR d.level = "PhD") AND c.name = "Database" RETURN s.name, s.snum ORDER BY s.snum

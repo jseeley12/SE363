@@ -1,0 +1,1 @@
+MATCH (n:departments {name: "Computer Science"})-[:offers]->(c:courses) RETURN c.number, c.name ORDER BY c.number

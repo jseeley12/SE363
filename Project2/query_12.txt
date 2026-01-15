@@ -1,0 +1,10 @@
+MATCH (d:degrees)
+OPTIONAL MATCH (s:students)-[:major]->(d)
+WITH d, coalesce(COUNT(s), 0) AS scount  
+WITH collect({degree: d, count: scount}) AS degree_counts
+WITH degree_counts, min(degree_counts[0].count) AS min_count
+UNWIND degree_counts AS dc
+WITH dc.degree AS degree, dc.count AS scount, min_count
+WHERE scount = min_count
+RETURN degree.name AS degree_name, degree.level AS degree_level, scount AS popularity
+ORDER BY degree_name

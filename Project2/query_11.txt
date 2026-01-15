@@ -1,0 +1,1 @@
+MATCH (s:students) WHERE s.gender = "F" AND ((s)-[:major]->(:degrees {name: "Software Engineering"}) OR (s)-[:minor]->(:degrees {name: "Software Engineering"})) RETURN COUNT(DISTINCT s.snum)

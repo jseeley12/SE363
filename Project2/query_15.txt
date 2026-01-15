@@ -1,0 +1,1 @@
+MATCH (s:students)-[:major|minor]->(d:degrees)<-[:administer]-(dept:departments) WHERE s.gender = "F" AND dept.college = "LAS" RETURN COUNT(s)

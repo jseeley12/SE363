@@ -1,0 +1,168 @@
+:param {
+  // Define the file path root and the individual file names required for loading.
+  // https://neo4j.com/docs/operations-manual/current/configuration/file-locations/
+  file_path_root: 'file:///', // Change this to the folder your script can access the files at.
+  file_0: 'students.csv',
+  file_1: 'courses.csv',
+  file_2: 'departments.csv',
+  file_3: 'degrees.csv',
+  file_4: 'register.csv',
+  file_5: 'minor.csv',
+  file_6: 'major.csv'
+};
+
+// CONSTRAINT creation
+// -------------------
+//
+// Create node uniqueness constraints, ensuring no duplicates for the given node label and ID property exist in the database. This also ensures no duplicates are introduced in future.
+//
+// NOTE: The following constraint creation syntax is valid for database version 4.4.0 and above.
+CREATE CONSTRAINT `snum_students_uniq` IF NOT EXISTS
+FOR (n: `students`)
+REQUIRE (n.`snum`) IS UNIQUE;
+CREATE CONSTRAINT `number_courses_uniq` IF NOT EXISTS
+FOR (n: `courses`)
+REQUIRE (n.`number`) IS UNIQUE;
+CREATE CONSTRAINT `code_departments_uniq` IF NOT EXISTS
+FOR (n: `departments`)
+REQUIRE (n.`code`) IS UNIQUE;
+CREATE CONSTRAINT `degree_id_degrees_uniq` IF NOT EXISTS
+FOR (n: `degrees`)
+REQUIRE (n.`degree_id`) IS UNIQUE;
+
+
+// INDEX creation
+// -------------------
+//
+// Create node indexes
+//
+CREATE INDEX `name_departments` IF NOT EXISTS
+FOR (n: `departments`)
+ON (n.`name`);
+
+:param {
+  idsToSkip: []
+};
+
+// NODE load
+// ---------
+//
+// Load nodes in batches, one node label at a time. Nodes will be created using a MERGE statement to ensure a node with the same label and ID property remains unique. Pre-existing nodes found by a MERGE statement will have their other properties set to the latest values encountered in a load file.
+//
+// NOTE: Any nodes with IDs in the 'idsToSkip' list parameter will not be loaded.
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_0) AS row
+WITH row
+WHERE NOT row.`snum` IN $idsToSkip AND NOT toInteger(trim(row.`snum`)) IS NULL
+CALL {
+  WITH row
+  MERGE (n: `students` { `snum`: toInteger(trim(row.`snum`)) })
+  SET n.`snum` = toInteger(trim(row.`snum`))
+  SET n.`ssn` = toInteger(trim(row.`ssn`))
+  SET n.`name` = row.`name`
+  SET n.`gender` = row.`gender`
+  SET n.`dob` = row.`dob`
+  SET n.`c_addr` = row.`c_addr`
+  SET n.`c_phone` = row.`c_phone`
+  SET n.`p_addr` = row.`p_addr`
+  SET n.`p_phone` = row.`p_phone`
+} IN TRANSACTIONS OF 10000 ROWS;
+
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_1) AS row
+WITH row
+WHERE NOT row.`number` IN $idsToSkip AND NOT toInteger(trim(row.`number`)) IS NULL
+CALL {
+  WITH row
+  MERGE (n: `courses` { `number`: toInteger(trim(row.`number`)) })
+  SET n.`number` = toInteger(trim(row.`number`))
+  SET n.`name` = row.`name`
+  SET n.`description` = row.`description`
+  SET n.`credithours` = toInteger(trim(row.`credithours`))
+  SET n.`level` = row.`level`
+  SET n.`department_code` = toInteger(trim(row.`department_code`))
+} IN TRANSACTIONS OF 10000 ROWS;
+
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_2) AS row
+WITH row
+WHERE NOT row.`code` IN $idsToSkip AND NOT toInteger(trim(row.`code`)) IS NULL
+CALL {
+  WITH row
+  MERGE (n: `departments` { `code`: toInteger(trim(row.`code`)) })
+  SET n.`code` = toInteger(trim(row.`code`))
+  SET n.`name` = row.`name`
+  SET n.`phone` = row.`phone`
+  SET n.`college` = row.`college`
+} IN TRANSACTIONS OF 10000 ROWS;
+
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_3) AS row
+WITH row
+WHERE NOT row.`degree_id` IN $idsToSkip AND NOT toInteger(trim(row.`degree_id`)) IS NULL
+CALL {
+  WITH row
+  MERGE (n: `degrees` { `degree_id`: toInteger(trim(row.`degree_id`)) })
+  SET n.`degree_id` = toInteger(trim(row.`degree_id`))
+  SET n.`name` = row.`name`
+  SET n.`level` = row.`level`
+  SET n.`department_code` = toInteger(trim(row.`department_code`))
+} IN TRANSACTIONS OF 10000 ROWS;
+
+
+// RELATIONSHIP load
+// -----------------
+//
+// Load relationships in batches, one relationship type at a time. Relationships are created using a MERGE statement, meaning only one relationship of a given type will ever be created between a pair of nodes.
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_4) AS row
+WITH row 
+CALL {
+  WITH row
+  MATCH (source: `students` { `snum`: toInteger(trim(row.`snum`)) })
+  MATCH (target: `courses` { `number`: toInteger(trim(row.`course_number`)) })
+  MERGE (source)-[r: `register`]->(target)
+  SET r.`snum` = toInteger(trim(row.`snum`))
+  SET r.`course_number` = toInteger(trim(row.`course_number`))
+  SET r.`regtime` = row.`regtime`
+  SET r.`grade` = toInteger(trim(row.`grade`))
+} IN TRANSACTIONS OF 10000 ROWS;
+
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_5) AS row
+WITH row 
+CALL {
+  WITH row
+  MATCH (source: `students` { `snum`: toInteger(trim(row.`snum`)) })
+  MATCH (target: `degrees` { `degree_id`: toInteger(trim(row.`degree_id`)) })
+  MERGE (source)-[r: `minor`]->(target)
+  SET r.`snum` = toInteger(trim(row.`snum`))
+  SET r.`name` = row.`name`
+  SET r.`level` = row.`level`
+  SET r.`degree_id` = toInteger(trim(row.`degree_id`))
+} IN TRANSACTIONS OF 10000 ROWS;
+
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_6) AS row
+WITH row 
+CALL {
+  WITH row
+  MATCH (source: `students` { `snum`: toInteger(trim(row.`snum`)) })
+  MATCH (target: `degrees` { `degree_id`: toInteger(trim(row.`degree_id`)) })
+  MERGE (source)-[r: `major`]->(target)
+  SET r.`snum` = toInteger(trim(row.`snum`))
+  SET r.`name` = row.`name`
+  SET r.`level` = row.`level`
+  SET r.`degree_id` = toInteger(trim(row.`degree_id`))
+} IN TRANSACTIONS OF 10000 ROWS;
+
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_3) AS row
+WITH row 
+CALL {
+  WITH row
+  MATCH (source: `departments` { `code`: toInteger(trim(row.`department_code`)) })
+  MATCH (target: `degrees` { `degree_id`: toInteger(trim(row.`degree_id`)) })
+  MERGE (source)-[r: `administer`]->(target)
+} IN TRANSACTIONS OF 10000 ROWS;
+
+LOAD CSV WITH HEADERS FROM ($file_path_root + $file_1) AS row
+WITH row 
+CALL {
+  WITH row
+  MATCH (source: `departments` { `code`: toInteger(trim(row.`department_code`)) })
+  MATCH (target: `courses` { `number`: toInteger(trim(row.`number`)) })
+  MERGE (source)-[r: `offers`]->(target)
+} IN TRANSACTIONS OF 10000 ROWS;

@@ -1,0 +1,1 @@
+MATCH (s:students)-[:major|minor]->(d:degrees) WHERE s.gender IS NOT NULL WITH d, COUNT(CASE WHEN s.gender = "M" THEN 1 END) AS maleCount, COUNT(CASE WHEN s.gender = "F" THEN 1 END) AS femaleCount WHERE maleCount > femaleCount RETURN d.name, d.level

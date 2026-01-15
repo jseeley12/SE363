@@ -1,0 +1,1 @@
+MATCH (s:students {name: "Lisa"}), (d:degrees {name: "Computer Science"}) MATCH p = shortestPath((s)-[*]-(d)) RETURN p

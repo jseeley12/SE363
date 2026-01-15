@@ -1,0 +1,1 @@
+MATCH (s:students)-[r:register]->(c:courses) WHERE r.regtime = "Fall2022" RETURN s.name

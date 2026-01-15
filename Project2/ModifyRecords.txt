@@ -1,0 +1,14 @@
+1.
+MATCH (s:students {ssn: 144673371}) SET s.name = "Scott" RETURN s
+
+2.
+MATCH (s:students {ssn: 144673371})-[m:major]->(d:degrees) SET m.level = "MS", m.name="Computer Science" RETURN s,m
+
+3.
+MATCH (s:students)-[r:register {regtime: "Summer2024"}]->(c:courses) DELETE r
+
+4.
+MATCH (d:departments {name: "Applied Mathematics"})-[a:administer]->(dd:degrees) DETACH DELETE d, dd
+
+5.
+MATCH (c:courses) WHERE NOT EXISTS { MATCH (c1: courses) WHERE c1.level = c.level AND c1.department_code = c.department_code AND c1.course_number < c.course_number } WITH c DETACH DELETE c

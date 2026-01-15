@@ -1,0 +1,1 @@
+MATCH (s:departments {name: "Computer Science"})-[a:administer]->(d:degrees) RETURN d.name, d.level ORDER BY d.level

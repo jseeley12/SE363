@@ -1,0 +1,11 @@
+MATCH (d:degrees)
+OPTIONAL MATCH (s_major:students)-[:major]->(d)
+OPTIONAL MATCH (s_minor:students)-[:minor]->(d)
+WITH d, coalesce(COUNT(DISTINCT s_major.snum), 0) AS majorCount, coalesce(COUNT(DISTINCT s_minor.snum), 0) AS minorCount
+WITH d, majorCount, minorCount, (majorCount + minorCount) AS totalCount
+WITH collect({degree: d, count: totalCount}) AS degree_counts, min(majorCount + minorCount) AS min_count
+UNWIND degree_counts AS dc
+WITH dc.degree AS degree, dc.count AS totalCount, min_count
+WHERE totalCount = min_count
+RETURN degree.name AS degree_name, degree.level AS degree_level, totalCount
+ORDER BY degree_name
